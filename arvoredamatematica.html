@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jogo das Maçãs Matemáticas</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  
+  <!-- Open Graph para compartilhamento -->
+  <meta property="og:title" content="Jogo das Maçãs" />
+  <meta property="og:description" content="Clique na resposta certa antes que as maçãs caiam!" />
+  <meta property="og:image" content="https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=632,h=422,fit=crop/YleqxXErxRFoGGgW/captura-de-tela-2025-07-22-113732-YbNJ7E87zZU4oloZ.png" />
+  <meta property="og:url" content="https://arvoredamatematica.expandoria.com.br/arvore_matematica.html" />
+  <meta property="og:type" content="website" />
+  <style>
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+    }
+
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: linear-gradient(to bottom, #87cefa, #e0f7ff);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><text y='25' font-size='28'>✋</text></svg>") 16 16, auto;
+    }
+
+    #gameArea {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .grass {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 15vh;
+      min-height: 80px;
+      max-height: 120px;
+      background: repeating-linear-gradient(
+        -45deg,
+        #7cfc00,
+        #7cfc00 10px,
+        #6bbf00 10px,
+        #6bbf00 20px
+      );
+      border-top: 2px solid black;
+      z-index: 2;
+    }
+
+    .trunk {
+      position: absolute;
+      bottom: 15vh;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 12vw;
+      min-width: 60px;
+      max-width: 100px;
+      height: 35vh;
+      min-height: 150px;
+      max-height: 300px;
+      background: linear-gradient(to bottom, #8b4513 50%, #654321 100%);
+      border-radius: 20px;
+      border: 2px solid black;
+      z-index: 1;
+    }
+
+    .leaves {
+      position: absolute;
+      bottom: calc(15vh + 35vh);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60vw;
+      max-width: 450px;
+      height: 30vh;
+      max-height: 250px;
+      min-height: 150px;
+      background: linear-gradient(to bottom, #7CFC00, #228b22);
+      border-radius: 50% 50% 40% 40%;
+      border: 2px solid black;
+      z-index: 1;
+    }
+
+    /* Top bar com placar e vidas */
+    #topBar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 8px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #E0FFFF;
+      text-shadow: 1px 1px 2px black;
+      font-size: clamp(16px, 4vw, 22px);
+      pointer-events: none;
+      user-select: none;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    #lives {
+      pointer-events: auto;
+      user-select: auto;
+      font-size: clamp(18px, 5vw, 24px);
+      color: #E0FFFF;
+      text-shadow: 1px 1px 2px black;
+    }
+
+    #score {
+      pointer-events: auto;
+      user-select: auto;
+      font-size: clamp(16px, 4vw, 22px);
+    }
+
+    /* Título central */
+    #titulo {
+      position: absolute;
+      top: 2%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: clamp(18px, 5vw, 24px);
+      color: #E0FFFF;
+      text-shadow: 1px 1px 2px black;
+      user-select: none;
+      z-index: 10;
+      text-align: center;
+      width: 90%;
+    }
+
+    .question {
+      position: absolute;
+      top: 18%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: clamp(18px, 5vw, 24px);
+      font-weight: bold;
+      color: white;
+      text-shadow: 2px 2px 4px #000;
+      user-select: none;
+      z-index: 10;
+      text-align: center;
+      width: 90%;
+    }
+
+    #message {
+      position: absolute;
+      top: 25%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: clamp(18px, 5vw, 26px);
+      color: gold;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px #000;
+      user-select: none;
+      z-index: 10;
+      text-align: center;
+      width: 90%;
+    }
+
+    #gameOver {
+      display: none;
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: clamp(24px, 7vw, 36px);
+      color: red;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px #000;
+      user-select: none;
+      z-index: 10;
+      text-align: center;
+      width: 90%;
+    }
+
+    /* Botões fixos no rodapé, lado a lado */
+    #buttonBar {
+      position: fixed;
+      bottom: 10px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 10px;
+      z-index: 9999;
+      will-change: auto;
+    }
+
+    .button {
+      padding: 10px 15px;
+      font-size: clamp(14px, 4vw, 18px);
+      border: none;
+      background: #FAA500;
+      color: black;
+      border-radius: 10px;
+      cursor: pointer;
+      border: 2px solid black;
+      user-select: none;
+      flex: 1 1 auto;
+      max-width: 120px;
+      text-align: center;
+      transition: background 0.3s ease;
+    }
+
+    .button:hover {
+      background: #e59400;
+    }
+
+    #audioToggleBtn {
+      max-width: 60px;
+    }
+
+    /* Maçãs (apples) */
+    .apple {
+      position: absolute;
+      width: clamp(40px, 10vw, 50px);
+      height: clamp(40px, 10vw, 50px);
+      background: red;
+      border-radius: 50%;
+      color: white;
+      font-weight: bold;
+      text-align: center;
+      line-height: clamp(40px, 10vw, 50px);
+      box-shadow: 0 0 5px #000;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+      user-select: none;
+      z-index: 5;
+      font-size: clamp(14px, 3vw, 16px);
+    }
+
+    .apple.correct {
+      animation: correctAnim 0.5s forwards;
+    }
+
+    .apple.wrong {
+      animation: wrongAnim 0.5s forwards;
+    }
+
+    @keyframes correctAnim {
+      0% { transform: scale(1); background: yellow; }
+      100% { transform: scale(1.4); background: gold; }
+    }
+
+    @keyframes wrongAnim {
+      0% { transform: scale(1); background: red; }
+      100% { transform: scale(0.5); opacity: 0.5; }
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    #specialAnimation {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: clamp(24px, 7vw, 48px);
+      color: gold;
+      font-weight: bold;
+      text-shadow: 2px 2px 6px #000;
+      display: none;
+      animation: blink 1s infinite;
+      pointer-events: none;
+      z-index: 999;
+      user-select: none;
+      text-align: center;
+      width: 90%;
+    }
+
+    /* Responsividade para celular */
+    @media (max-width: 600px) and (orientation: portrait) {
+      .trunk {
+        height: 30vh;
+      }
+      
+      .leaves {
+        bottom: calc(15vh + 30vh);
+        width: 80vw;
+        height: 25vh;
+      }
+      
+      .question {
+        top: 15%;
+      }
+      
+      #message {
+        top: 22%;
+      }
+      
+      #buttonBar {
+        bottom: 5px;
+        gap: 8px;
+      }
+      
+      .button {
+        padding: 8px 10px;
+        max-width: 100px;
+      }
+    }
+
+    @media (max-height: 600px) {
+      .trunk {
+        height: 25vh;
+      }
+      
+      .leaves {
+        bottom: calc(15vh + 25vh);
+        height: 20vh;
+      }
+      
+      .question {
+        top: 12%;
+      }
+      
+      #message {
+        top: 20%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="gameArea">
+    <div class="grass"></div>
+    <div class="trunk"></div>
+    <div class="leaves"></div>
+
+    <div id="topBar">
+      <div id="score">Placar: 0</div>
+      <div id="lives">🍎🍎🍎🍎🍎</div>
+    </div>
+
+    <div id="titulo">Árvore da Matemática</div>
+    <div class="question" id="question"></div>
+    <div id="message"></div>
+    <div id="gameOver">Fim de jogo! 😢</div>
+
+    <div id="buttonBar">
+      <button class="button" id="startBtn">Iniciar</button>
+      <button class="button" id="pauseBtn">⏸ Pausar</button>
+      <button class="button" id="restartBtn" style="display:none;">Reiniciar</button>
+      <button class="button" id="audioToggleBtn" title="Som ativado">🔊</button>
+    </div>
+
+    <div id="specialAnimation">🎉 10 Acertos Seguidos! 🎉</div>
+  </div>
+
+  <audio id="soundCorrect" src="https://www.soundjay.com/buttons/sounds/button-3.mp3" preload="auto"></audio>
+  <audio id="soundWrong" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+
+  <script>
+    const questionEl = document.getElementById('question');
+    const gameArea = document.getElementById('gameArea');
+    const message = document.getElementById('message');
+    const livesEl = document.getElementById('lives');
+    const gameOver = document.getElementById('gameOver');
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const scoreEl = document.getElementById('score');
+    const soundCorrect = document.getElementById('soundCorrect');
+    const soundWrong = document.getElementById('soundWrong');
+    const audioToggleBtn = document.getElementById('audioToggleBtn');
+    const specialAnimation = document.getElementById('specialAnimation');
+
+    let score = 0;
+    let lives = 5;
+    let speed = 1.2;
+    let paused = false;
+    let correctAnswer = 0;
+    let audioEnabled = true;
+    let consecutiveHits = 0;
+    let appleIntervals = [];
+    let gameActive = false;
+
+    // Precarregar áudios
+    function preloadAudio() {
+      soundCorrect.volume = 0.7;
+      soundWrong.volume = 0.7;
+      
+      // Tenta tocar e pausar para precarregar
+      try {
+        soundCorrect.play().then(() => {
+          soundCorrect.pause();
+          soundCorrect.currentTime = 0;
+        }).catch(() => {});
+        
+        soundWrong.play().then(() => {
+          soundWrong.pause();
+          soundWrong.currentTime = 0;
+        }).catch(() => {});
+      } catch(e) {
+        console.log("Erro no precarregamento de áudio:", e);
+      }
+    }
+
+    preloadAudio();
+
+    audioToggleBtn.addEventListener('click', () => {
+      audioEnabled = !audioEnabled;
+      audioToggleBtn.textContent = audioEnabled ? '🔊' : '🔇';
+      audioToggleBtn.title = audioEnabled ? 'Som ativado' : 'Som desativado';
+    });
+
+    function generateQuestion() {
+      let a, b, result;
+      const operations = ['+', '-', '×', '÷'];
+      const opIndex = Math.floor(Math.random() * operations.length);
+      const op = operations[opIndex];
+
+      switch(op) {
+        case '+':
+          do {
+            a = Math.floor(Math.random() * 50) + 1;
+            b = Math.floor(Math.random() * 50) + 1;
+            result = a + b;
+          } while (result > 100);
+          questionEl.textContent = `${a} + ${b} = ?`;
+          break;
+
+        case '-':
+          do {
+            a = Math.floor(Math.random() * 100) + 1;
+            b = Math.floor(Math.random() * 100) + 1;
+            if (a < b) [a, b] = [b, a];
+            result = a - b;
+          } while (result < 0 || result > 100);
+          questionEl.textContent = `${a} - ${b} = ?`;
+          break;
+
+        case '×':
+          do {
+            a = Math.floor(Math.random() * 10) + 1;
+            b = Math.floor(Math.random() * 10) + 1;
+            result = a * b;
+          } while (result > 100);
+          questionEl.textContent = `${a} × ${b} = ?`;
+          break;
+
+        case '÷':
+          do {
+            b = Math.floor(Math.random() * 10) + 1;
+            result = Math.floor(Math.random() * 10) + 1;
+            a = b * result;
+          } while (result > 10 || a > 100);
+          questionEl.textContent = `${a} ÷ ${b} = ?`;
+          break;
+      }
+
+      correctAnswer = result;
+    }
+
+    function updateLives() {
+      livesEl.textContent = '🍎'.repeat(lives);
+    }
+
+    function clearApples() {
+      // Limpa todos os intervalos das maçãs
+      appleIntervals.forEach(interval => clearInterval(interval));
+      appleIntervals = [];
+      
+      // Remove todas as maçãs do DOM
+      document.querySelectorAll('.apple').forEach(el => {
+        if (gameArea.contains(el)) {
+          gameArea.removeChild(el);
+        }
+      });
+    }
+
+    function endGame() {
+      gameActive = false;
+      clearApples();
+      gameOver.style.display = 'block';
+      startBtn.style.display = 'none';
+      restartBtn.style.display = 'inline-block';
+    }
+
+    function showSpecialAnimation() {
+      specialAnimation.style.display = 'block';
+      setTimeout(() => {
+        specialAnimation.style.display = 'none';
+      }, 4000);
+    }
+
+    function startRound() {
+      if (!gameActive) return;
+      
+      clearApples();
+      generateQuestion();
+
+      const numApples = 5 + Math.floor(Math.random() * 2);
+      const correctIndex = Math.floor(Math.random() * numApples);
+      const spacing = window.innerWidth / (numApples + 1);
+
+      for (let i = 0; i < numApples; i++) {
+        const num = i === correctIndex ? correctAnswer : Math.floor(Math.random() * 100);
+        const apple = document.createElement('div');
+        apple.classList.add('apple');
+        apple.textContent = num;
+
+        const jitter = Math.random() * 30 - 15;
+        const x = spacing * (i + 1) + jitter;
+        apple.style.left = `${x}px`;
+        apple.style.top = '-60px';
+        gameArea.appendChild(apple);
+
+        let topPos = -60;
+        let angle = Math.random() * Math.PI * 2;
+        const amplitude = 10 + Math.random() * 10;
+        const freq = 0.05 + Math.random() * 0.02;
+        const initialLeft = parseFloat(apple.style.left);
+
+        const fallInterval = setInterval(() => {
+          if (paused || !gameActive) return;
+          
+          topPos += speed;
+          angle += freq;
+          const offsetX = Math.sin(angle) * amplitude;
+
+          apple.style.top = topPos + 'px';
+          apple.style.left = `${initialLeft + offsetX}px`;
+
+          // Se a maçã sair da tela sem ser clicada
+          if (topPos > window.innerHeight) {
+            clearInterval(fallInterval);
+            if (gameArea.contains(apple)) {
+              gameArea.removeChild(apple);
+              
+              // Se era a maçã correta que caiu, penaliza o jogador
+              if (i === correctIndex) {
+                consecutiveHits = 0;
+                message.textContent = '😢 A maçã certa caiu!';
+                if (audioEnabled) soundWrong.play();
+                lives--;
+                updateLives();
+                
+                setTimeout(() => {
+                  message.textContent = '';
+                  if (lives > 0) {
+                    startRound();
+                  } else {
+                    endGame();
+                  }
+                }, 1500);
+              }
+            }
+          }
+        }, 20);
+        
+        appleIntervals.push(fallInterval);
+
+        apple.addEventListener('click', () => {
+          if (paused || !gameActive) return;
+          
+          clearInterval(fallInterval);
+          if (i === correctIndex) {
+            consecutiveHits++;
+            apple.classList.add('correct');
+            message.textContent = '🎉 Parabéns, você acertou!';
+            if (audioEnabled) soundCorrect.play();
+            score++;
+            scoreEl.textContent = `Placar: ${score}`;
+
+            if (consecutiveHits === 10) {
+              showSpecialAnimation();
+              consecutiveHits = 0;
+            }
+          } else {
+            consecutiveHits = 0;
+            apple.classList.add('wrong');
+            message.textContent = '❌ Ops! Tente outra vez.';
+            if (audioEnabled) soundWrong.play();
+            lives--;
+            updateLives();
+          }
+
+          setTimeout(() => {
+            if (gameArea.contains(apple)) {
+              gameArea.removeChild(apple);
+            }
+            message.textContent = '';
+            if (lives > 0 && gameActive) {
+              startRound();
+            } else if (gameActive) {
+              endGame();
+            }
+          }, 800);
+        });
+      }
+    }
+
+    function startGame() {
+      gameActive = true;
+      lives = 5;
+      score = 0;
+      speed = 1.2;
+      paused = false;
+      consecutiveHits = 0;
+      updateLives();
+      scoreEl.textContent = 'Placar: 0';
+      gameOver.style.display = 'none';
+      startBtn.style.display = 'none';
+      restartBtn.style.display = 'none';
+      pauseBtn.textContent = '⏸ Pausar';
+      startRound();
+    }
+
+    startBtn.addEventListener('click', startGame);
+    
+    restartBtn.addEventListener('click', startGame);
+
+    pauseBtn.addEventListener('click', () => {
+      if (!gameActive) return;
+      
+      paused = !paused;
+      pauseBtn.textContent = paused ? '▶ Continuar' : '⏸ Pausar';
+    });
+
+    // Garantir que o jogo pare quando a página não estiver visível
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden && gameActive) {
+        paused = true;
+        pauseBtn.textContent = '▶ Continuar';
+      }
+    });
+  </script>
+</body>
+</html>
